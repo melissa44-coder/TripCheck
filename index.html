@@ -1,0 +1,1759 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>TripChecks | Ticket Management System</title>
+
+    <!-- External Libraries -->
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- QR Code Scanner -->
+    <script
+      src="https://unpkg.com/html5-qrcode"
+      type="text/javascript"
+    ></script>
+    <!-- PDF Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Icons -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --secondary: #64748b;
+        --success: #22c55e;
+        --warning: #eab308;
+        --danger: #ef4444;
+        --background: #f1f5f9;
+        --surface: #ffffff;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --radius: 8px;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        --mobile-nav-height: 65px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+
+      body {
+        background-color: var(--background);
+        color: var(--text-main);
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      /* --- Utilities --- */
+      .hidden {
+        display: none !important;
+      }
+
+      /* Touch-Friendly Buttons */
+      .btn {
+        padding: 0.8rem 1.4rem;
+        border: none;
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 44px; /* iOS touch target minimum */
+        font-size: 1rem;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: var(--primary-dark);
+      }
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-main);
+      }
+      .btn-outline:hover {
+        background: var(--background);
+      }
+      .w-full {
+        width: 100%;
+      }
+
+      /* --- Login Screen --- */
+      #login-view {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--primary-dark) 100%
+        );
+        padding: 20px;
+      }
+      .login-card {
+        background: var(--surface);
+        padding: 2.5rem;
+        border-radius: var(--radius);
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .login-logo {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+      }
+      .input-group {
+        margin-bottom: 1.5rem;
+        text-align: left;
+      }
+      .input-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+      .input-group input,
+      .input-group select {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 1rem;
+        min-height: 44px;
+      }
+
+      .row-group {
+        display: flex;
+        gap: 1rem;
+      }
+
+      /* --- Main Layout --- */
+      #main-layout {
+        display: flex;
+        height: 100vh;
+      }
+
+      /* --- Sidebar (Desktop) --- */
+      aside {
+        width: 260px;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        transition: transform 0.3s ease;
+        z-index: 100;
+      }
+      .brand {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--primary);
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .nav-item {
+        padding: 0.8rem 1rem;
+        border-radius: var(--radius);
+        color: var(--text-muted);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        cursor: pointer;
+      }
+      .nav-item:hover,
+      .nav-item.active {
+        background: var(--background);
+        color: var(--primary);
+        font-weight: 600;
+      }
+      .logout-btn {
+        margin-top: auto;
+        color: var(--danger);
+      }
+
+      /* Main Content */
+      main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        position: relative;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* --- Dashboard --- */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .trip-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+      .trip-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        cursor: pointer;
+        position: relative;
+      }
+      .trip-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow);
+        border-color: var(--primary);
+      }
+      .trip-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+      }
+      .trip-actions {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .delete-trip {
+        color: var(--danger);
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+
+      /* --- Trip Details --- */
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      .student-table-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .table-responsive-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+      }
+      th,
+      td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      th {
+        background: var(--background);
+        font-weight: 600;
+        color: var(--text-muted);
+      }
+      .status-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 99px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: normal;
+      }
+      .status-pending {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .status-checked-in {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .action-icon {
+        cursor: pointer;
+        color: var(--secondary);
+        margin: 0 0.5rem;
+        transition: color 0.2s;
+        font-size: 1.2rem;
+      }
+      .action-icon:hover {
+        color: var(--primary);
+      }
+
+      /* --- Scanner --- */
+      #scanner-container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        background: black;
+        border-radius: var(--radius);
+        overflow: hidden;
+        position: relative;
+      }
+      #reader {
+        width: 100%;
+      }
+      .scan-result-overlay {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        border-radius: var(--radius);
+        display: none;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      .scan-status-valid {
+        border-left: 5px solid var(--success);
+      }
+      .scan-status-warning {
+        border-left: 5px solid var(--warning);
+      }
+      .scan-status-invalid {
+        border-left: 5px solid var(--danger);
+      }
+      .manual-entry {
+        margin-top: 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      /* --- Modals --- */
+      .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        padding: 20px;
+      }
+      .modal-backdrop.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal {
+        background: var(--surface);
+        width: 100%;
+        max-width: 400px;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(20px);
+        transition: transform 0.2s;
+      }
+      .modal-backdrop.open .modal {
+        transform: translateY(0);
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+      }
+      .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+      }
+      .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      #ticket-preview {
+        text-align: center;
+        border: 2px dashed var(--border);
+        padding: 2rem;
+        margin-bottom: 1rem;
+        background: white;
+        border-radius: var(--radius);
+      }
+      #ticket-qr {
+        margin: 1rem auto;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* Toast */
+      #toast-container {
+        position: fixed;
+        bottom: 85px;
+        right: 20px;
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toast {
+        background: var(--surface);
+        border-left: 4px solid var(--primary);
+        padding: 1rem;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        min-width: 250px;
+        animation: slideIn 0.3s ease;
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+
+      /* --- Responsive Media Queries --- */
+      /* Tablet (768px - 1024px) */
+      @media (max-width: 1024px) {
+        .trip-grid {
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+        aside {
+          width: 220px;
+        }
+      }
+
+      /* Mobile (<768px) */
+      @media (max-width: 768px) {
+        #main-layout {
+          flex-direction: column;
+        }
+
+        /* Sidebar becomes Bottom Nav Bar */
+        aside {
+          width: 100%;
+          height: var(--mobile-nav-height);
+          background: var(--surface);
+          border-right: none;
+          border-top: 1px solid var(--border);
+          position: fixed;
+          bottom: 0;
+          top: auto;
+          left: 0;
+          padding: 0;
+          flex-direction: row; /* Force row layout */
+          justify-content: space-around; /* Distribute space evenly */
+          z-index: 1000; /* Ensure it is above main content */
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+          /* Add safe area padding for iPhone home bar */
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Hide Brand on Bottom Nav */
+        .brand {
+          display: none;
+        }
+
+        /* Ensure nav container fills aside */
+        aside nav {
+          display: flex;
+          width: 100%;
+          height: 100%;
+        }
+
+        /* Nav Items become Tab Icons */
+        .nav-item {
+          flex: 1; /* CRITICAL: Force items to share width equally */
+          flex-direction: column;
+          font-size: 0.75rem;
+          text-align: center;
+          padding: 5px; /* Reduce padding */
+          margin-bottom: 0; /* Remove margin */
+          justify-content: center; /* Center vertically */
+          height: 100%; /* Full height of nav bar */
+          color: var(--text-muted);
+          border-radius: 0; /* Remove rounded corners for tabs */
+        }
+
+        .nav-item i {
+          font-size: 1.25rem;
+          margin-bottom: 4px;
+        }
+        .nav-item span {
+          display: block;
+        }
+
+        /* Active state styling for mobile tabs */
+        .nav-item.active {
+          background: var(--background);
+          color: var(--primary);
+          border-top: 3px solid var(--primary); /* Visual indicator */
+        }
+
+        /* Main Content Padding to clear Bottom Nav */
+        main {
+          padding: 1rem;
+          padding-bottom: calc(
+            var(--mobile-nav-height) + 20px
+          ); /* Space for nav */
+        }
+
+        /* Header Layout */
+        .header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        /* Form Rows Stack */
+        .row-group {
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        /* Modals take full width on very small screens */
+        .modal {
+          width: 95%;
+          max-width: none;
+          padding: 1rem;
+        }
+
+        /* Adjust Toast Position */
+        #toast-container {
+          bottom: 85px;
+          left: 20px;
+          right: 20px;
+        }
+        .toast {
+          min-width: auto;
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 375px) {
+        .btn {
+          font-size: 0.9rem;
+          padding: 0.6rem 1rem;
+        }
+        h2 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Login View -->
+    <div id="login-view">
+      <div class="login-card">
+        <div class="login-logo">
+          <i class="fas fa-ticket-alt"></i> TripChecks
+        </div>
+        <h2>Admin Login</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem">
+          School Ticket Management System
+        </p>
+        <form id="login-form">
+          <div class="input-group">
+            <label>Username</label>
+            <input
+              type="text"
+              id="username"
+              placeholder="Enter admin username"
+              required
+              autocomplete="off"
+            />
+          </div>
+          <div class="input-group">
+            <label>Password</label>
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-full">
+            Secure Login
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Application Layout (Hidden by default) -->
+    <div id="main-layout" class="hidden">
+      <aside>
+        <div class="brand">
+          <i class="fas fa-ticket-alt"></i> <span>TripChecks</span>
+        </div>
+        <nav>
+          <a
+            onclick="router.navigate('dashboard')"
+            class="nav-item active"
+            id="nav-dashboard"
+          >
+            <i class="fas fa-th-large"></i> <span>Dashboard</span>
+          </a>
+          <a
+            onclick="router.navigate('scanner')"
+            class="nav-item"
+            id="nav-scanner"
+          >
+            <i class="fas fa-qrcode"></i> <span>Scanner</span>
+          </a>
+          <div class="nav-item logout-btn" onclick="auth.logout()">
+            <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+          </div>
+        </nav>
+      </aside>
+
+      <main id="content-area">
+        <!-- Dashboard View -->
+        <section id="view-dashboard">
+          <div class="header">
+            <h2>Upcoming Trips</h2>
+            <button
+              class="btn btn-primary"
+              onclick="ui.openModal('modal-create-trip')"
+            >
+              <i class="fas fa-plus"></i> New Trip
+            </button>
+          </div>
+          <div class="trip-grid" id="trip-list">
+            <!-- Trips injected via JS -->
+          </div>
+        </section>
+
+        <!-- Trip Details View -->
+        <section id="view-trip-details" class="hidden">
+          <div class="header">
+            <div>
+              <button
+                class="btn btn-outline"
+                onclick="router.navigate('dashboard')"
+                style="margin-bottom: 0.5rem"
+              >
+                <i class="fas fa-arrow-left"></i> Back
+              </button>
+              <h2 id="current-trip-name">Trip Name</h2>
+              <span id="current-trip-meta" class="text-muted"
+                >Destination • Date</span
+              >
+            </div>
+            <div>
+              <button
+                class="btn btn-primary"
+                onclick="ui.openModal('modal-add-student')"
+              >
+                <i class="fas fa-user-plus"></i> Add Student
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <input
+              type="text"
+              id="student-search"
+              placeholder="Search by name or ID..."
+              class="input-group"
+              style="
+                width: 200px;
+                padding: 0.5rem;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+              "
+            />
+            <button
+              class="btn btn-outline"
+              onclick="ui.openModal('modal-bulk-import')"
+            >
+              <i class="fas fa-file-csv"></i> Bulk Import
+            </button>
+            <button
+              class="btn btn-outline"
+              onclick="app.downloadAllTicketsPDF()"
+            >
+              <i class="fas fa-file-pdf"></i> Download All Tickets (PDF)
+            </button>
+          </div>
+
+          <div class="student-table-container">
+            <div class="table-responsive-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID #</th>
+                    <th>Name</th>
+                    <th>Grade & Section</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="student-list-body">
+                  <!-- Students injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Scanner View -->
+        <section id="view-scanner" class="hidden">
+          <div class="header">
+            <h2>Ticket Validator</h2>
+          </div>
+          <div id="scanner-container">
+            <div id="reader"></div>
+            <div id="scan-result" class="scan-result-overlay">
+              <h3 id="scan-status-text">VALID</h3>
+              <p id="scan-student-name">Student Name</p>
+              <p id="scan-student-details" class="text-muted">
+                ID: 123 • Sec: A
+              </p>
+              <p
+                id="scan-timestamp"
+                class="text-muted"
+                style="font-size: 0.8rem; margin-top: 0.5rem"
+              ></p>
+            </div>
+          </div>
+
+          <div class="manual-entry">
+            <input
+              type="text"
+              id="manual-id-input"
+              placeholder="Enter 3-digit ID manually"
+              class="w-full"
+              style="
+                padding: 1rem;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+              "
+            />
+            <button class="btn btn-primary" onclick="scannerApp.manualCheck()">
+              Check
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Trip Modal -->
+    <div id="modal-create-trip" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Create New Trip</span>
+          <button
+            class="close-modal"
+            onclick="ui.closeModal('modal-create-trip')"
+          >
+            &times;
+          </button>
+        </div>
+        <form onsubmit="app.createTrip(event)">
+          <div class="input-group">
+            <label>Trip Name</label>
+            <input
+              type="text"
+              name="name"
+              required
+              placeholder="e.g., IT CLUB SCIENCE TRIP"
+            />
+          </div>
+          <div class="input-group">
+            <label>Destination</label>
+            <input
+              type="text"
+              name="destination"
+              required
+              placeholder="e.g., Science Museum"
+            />
+          </div>
+          <div class="input-group">
+            <label>Date</label>
+            <input type="date" name="date" required />
+          </div>
+          <div class="input-group">
+            <label>Max Capacity</label>
+            <input
+              type="number"
+              name="capacity"
+              required
+              placeholder="e.g., 50"
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-full">
+            Create Trip
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="modal-add-student" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Add Student</span>
+          <button
+            class="close-modal"
+            onclick="ui.closeModal('modal-add-student')"
+          >
+            &times;
+          </button>
+        </div>
+        <form onsubmit="app.addStudent(event)">
+          <div class="input-group">
+            <label>Full Name</label>
+            <input type="text" name="name" required />
+          </div>
+
+          <!-- Updated: Row for Grade and Section -->
+          <div class="row-group">
+            <div class="input-group">
+              <label>Grade</label>
+              <select name="grade" required>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label>Section</label>
+              <select name="section" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+                <option value="H">H</option>
+                <option value="I">I</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>ID Number (3-digit)</label>
+            <input
+              type="number"
+              name="student_id"
+              required
+              min="100"
+              max="999"
+              placeholder="e.g. 101"
+            />
+          </div>
+          <button type="submit" class="btn btn-primary w-full">
+            Add Student
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Print/View Ticket Modal -->
+    <div id="modal-print-ticket" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Ticket Preview</span>
+          <button
+            class="close-modal"
+            onclick="ui.closeModal('modal-print-ticket')"
+          >
+            &times;
+          </button>
+        </div>
+        <div id="ticket-preview">
+          <h3 style="color: var(--primary)">TripChecks</h3>
+          <h4 id="ticket-trip-name" style="margin: 0.5rem 0">Trip Name</h4>
+          <p class="text-muted" id="ticket-dest-date">Dest • Date</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 1rem 0" />
+          <h2 id="ticket-student-name">Student Name</h2>
+          <p id="ticket-student-info">ID: 000</p>
+          <div id="ticket-qr"></div>
+        </div>
+        <button
+          class="btn btn-primary w-full"
+          onclick="app.downloadSingleTicketPDF()"
+        >
+          <i class="fas fa-download"></i> Download PDF Ticket
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="modal-bulk-import" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Bulk Import (CSV)</span>
+          <button
+            class="close-modal"
+            onclick="ui.closeModal('modal-bulk-import')"
+          >
+            &times;
+          </button>
+        </div>
+        <!-- Updated Help Text -->
+        <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem">
+          Format: Name, Grade, Section, ID (One per line)
+        </p>
+        <!-- Updated Placeholder -->
+        <textarea
+          id="bulk-import-text"
+          rows="5"
+          class="w-full"
+          style="
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+          "
+          placeholder="John Doe,10,B,101&#10;Jane Smith,11,A,102"
+        ></textarea>
+        <button
+          class="btn btn-primary w-full"
+          onclick="app.processBulkImport()"
+        >
+          Import Students
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // --- Utility Functions ---
+      const uuid = () =>
+        Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+      const toast = (msg, type = "info") => {
+        const container = document.getElementById("toast-container");
+        const el = document.createElement("div");
+        el.className = "toast";
+        el.style.borderLeftColor =
+          type === "error"
+            ? "var(--danger)"
+            : type === "success"
+              ? "var(--success)"
+              : "var(--primary)";
+        el.innerText = msg;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+      };
+
+      const playBeep = (type = "success") => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === "success") {
+          osc.frequency.value = 1200;
+          osc.type = "sine";
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.1);
+        } else if (type === "error") {
+          osc.frequency.value = 150;
+          osc.type = "sawtooth";
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        } else {
+          osc.frequency.value = 800;
+          osc.type = "square";
+          gain.gain.setValueAtTime(0.05, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.1);
+        }
+      };
+
+      // --- Database Simulation (LocalStorage) ---
+      const db = {
+        getTrips: () => JSON.parse(localStorage.getItem("tc_trips") || "[]"),
+        saveTrips: (trips) =>
+          localStorage.setItem("tc_trips", JSON.stringify(trips)),
+
+        getStudents: () =>
+          JSON.parse(localStorage.getItem("tc_students") || "[]"),
+        saveStudents: (students) =>
+          localStorage.setItem("tc_students", JSON.stringify(students)),
+
+        addTrip: (trip) => {
+          const trips = db.getTrips();
+          trip.id = uuid();
+          trip.created_at = new Date().toISOString();
+          trips.push(trip);
+          db.saveTrips(trips);
+          return trip;
+        },
+
+        deleteTrip: (id) => {
+          const trips = db.getTrips().filter((t) => t.id !== id);
+          db.saveTrips(trips);
+          const students = db.getStudents().filter((s) => s.trip_id !== id);
+          db.saveStudents(students);
+        },
+
+        addStudent: (student) => {
+          const students = db.getStudents();
+          if (
+            students.some(
+              (s) =>
+                s.trip_id === student.trip_id &&
+                s.student_id === student.student_id,
+            )
+          ) {
+            throw new Error("Student ID already exists in this trip.");
+          }
+          student.id = uuid();
+          student.status = "Pending";
+          students.push(student);
+          db.saveStudents(students);
+          return student;
+        },
+
+        updateStudentStatus: (id, status) => {
+          const students = db.getStudents();
+          const index = students.findIndex((s) => s.id === id);
+          if (index !== -1) {
+            students[index].status = status;
+            if (status === "Checked-in") {
+              students[index].checked_in_at = new Date().toISOString();
+            }
+            db.saveStudents(students);
+            return students[index];
+          }
+          return null;
+        },
+
+        findStudentByScanId: (tripId, scanId) => {
+          return db
+            .getStudents()
+            .find((s) => s.trip_id === tripId && s.student_id == scanId);
+        },
+      };
+
+      // --- Authentication (Hardened) ---
+      const auth = {
+        login: (user, pass) => {
+          if (user === "admin" && pass === "IT admin123") {
+            // Set login flags in LocalStorage
+            localStorage.setItem("tc_auth", "true");
+            localStorage.setItem("tc_login_time", Date.now());
+            return true;
+          } else {
+            return false;
+          }
+        },
+        logout: () => {
+          // Explicitly remove all auth-related keys
+          localStorage.removeItem("tc_auth");
+          localStorage.removeItem("tc_login_time");
+
+          // Force page reload to ensure all JavaScript state is cleared
+          window.location.reload();
+        },
+        checkSession: () => {
+          const isAuthenticated = localStorage.getItem("tc_auth") === "true";
+
+          // If not authenticated, return false immediately
+          if (!isAuthenticated) return false;
+
+          // If authenticated, check the timer
+          const loginTimeRaw = localStorage.getItem("tc_login_time");
+          const loginTime = parseInt(loginTimeRaw);
+          const now = Date.now();
+          const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+          // If loginTime is missing or invalid, treat as expired/invalid
+          if (isNaN(loginTime)) {
+            auth.logout();
+            return false;
+          }
+
+          // Check if 30 minutes have passed since last activity
+          if (now - loginTime > SESSION_TIMEOUT) {
+            auth.logout(); // Auto logout
+            return false;
+          }
+
+          // If all checks pass, user is still logged in
+          return true;
+        },
+        resetTimer: () => {
+          // Only reset timer if the user is actually logged in
+          if (localStorage.getItem("tc_auth") === "true") {
+            localStorage.setItem("tc_login_time", Date.now());
+          }
+        },
+      };
+
+      // --- Router ---
+      const router = {
+        currentTripId: null,
+        navigate: (view) => {
+          // Gatekeeper: Always check session before navigation
+          if (!auth.checkSession()) return;
+
+          document
+            .querySelectorAll("main > section")
+            .forEach((el) => el.classList.add("hidden"));
+          document
+            .querySelectorAll(".nav-item")
+            .forEach((el) => el.classList.remove("active"));
+          document.getElementById(`view-${view}`).classList.remove("hidden");
+
+          if (view === "dashboard") {
+            document.getElementById("nav-dashboard").classList.add("active");
+            app.renderDashboard();
+          } else if (view === "scanner") {
+            document.getElementById("nav-scanner").classList.add("active");
+            scannerApp.start();
+          } else if (view === "trip-details") {
+            // Handled by app.loadTripDetails
+          }
+        },
+      };
+
+      // --- Application Logic ---
+      const app = {
+        currentStudentForPDF: null, // State holder for modal
+
+        init: () => {
+          // 1. Check Session Status on Page Load
+          // This determines if we show Login View or Dashboard
+          if (auth.checkSession()) {
+            document.getElementById("login-view").classList.add("hidden");
+            document.getElementById("main-layout").classList.remove("hidden");
+            router.navigate("dashboard");
+          } else {
+            // User is not logged in (or session expired), show login screen
+            document.getElementById("login-view").classList.remove("hidden");
+            document.getElementById("main-layout").classList.add("hidden");
+          }
+
+          // 2. Load Dummy Data if DB is empty
+          if (db.getTrips().length === 0) {
+            const trip = db.addTrip({
+              name: "Science Museum Visit",
+              destination: "National Science Center",
+              date: "2023-11-15",
+              capacity: 40,
+            });
+            db.addStudent({
+              trip_id: trip.id,
+              name: "Alice Johnson",
+              grade: "10",
+              section: "A",
+              student_id: "101",
+            });
+            db.addStudent({
+              trip_id: trip.id,
+              name: "Bob Smith",
+              grade: "11",
+              section: "B",
+              student_id: "102",
+            });
+          }
+
+          // 3. Attach Event Listeners
+          // Login Form
+          const loginForm = document.getElementById("login-form");
+          if (loginForm) {
+            loginForm.addEventListener("submit", (e) => {
+              e.preventDefault();
+              const u = document.getElementById("username").value;
+              const p = document.getElementById("password").value;
+
+              // Attempt Login
+              if (auth.login(u, p)) {
+                toast("Login successful", "success");
+                document.getElementById("login-view").classList.add("hidden");
+                document
+                  .getElementById("main-layout")
+                  .classList.remove("hidden");
+                router.navigate("dashboard");
+              } else {
+                toast("Invalid credentials", "error");
+              }
+            });
+          }
+
+          // Search Input
+          const searchInput = document.getElementById("student-search");
+          if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+              app.renderStudents(e.target.value);
+            });
+          }
+
+          // Activity Monitors (Keep session alive)
+          window.addEventListener("mousemove", auth.resetTimer);
+          window.addEventListener("keydown", auth.resetTimer);
+        },
+
+        renderDashboard: () => {
+          const list = document.getElementById("trip-list");
+          list.innerHTML = "";
+          const trips = db.getTrips();
+          if (trips.length === 0) {
+            list.innerHTML = '<p class="text-muted">No trips created yet.</p>';
+            return;
+          }
+
+          trips.forEach((trip) => {
+            const studentCount = db
+              .getStudents()
+              .filter((s) => s.trip_id === trip.id).length;
+            const card = document.createElement("div");
+            card.className = "trip-card";
+            card.innerHTML = `
+                        <h3>${trip.name}</h3>
+                        <div class="trip-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> ${trip.destination}</span>
+                            <span><i class="far fa-calendar"></i> ${trip.date}</span>
+                            <span><i class="fas fa-users"></i> ${studentCount} / ${trip.capacity} Students</span>
+                        </div>
+                        <div class="trip-actions">
+                            <button class="btn btn-outline" onclick="app.loadTripDetails('${trip.id}')">Manage</button>
+                            <button class="delete-trip" onclick="app.deleteTrip('${trip.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+            list.appendChild(card);
+          });
+        },
+
+        createTrip: (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          try {
+            db.addTrip({
+              name: formData.get("name"),
+              destination: formData.get("destination"),
+              date: formData.get("date"),
+              capacity: formData.get("capacity"),
+            });
+            ui.closeModal("modal-create-trip");
+            e.target.reset();
+            app.renderDashboard();
+            toast("Trip created successfully", "success");
+          } catch (err) {
+            toast(err.message, "error");
+          }
+        },
+
+        deleteTrip: (id) => {
+          if (
+            confirm(
+              "Are you sure? This will delete all students associated with this trip.",
+            )
+          ) {
+            db.deleteTrip(id);
+            app.renderDashboard();
+            toast("Trip deleted", "info");
+          }
+        },
+
+        loadTripDetails: (tripId) => {
+          router.currentTripId = tripId;
+          const trip = db.getTrips().find((t) => t.id === tripId);
+          if (!trip) return;
+
+          document.getElementById("current-trip-name").innerText = trip.name;
+          document.getElementById("current-trip-meta").innerText =
+            `${trip.destination} • ${trip.date}`;
+
+          document.getElementById("view-dashboard").classList.add("hidden");
+          document
+            .getElementById("view-trip-details")
+            .classList.remove("hidden");
+          app.renderStudents();
+        },
+
+        renderStudents: (filter = "") => {
+          const tbody = document.getElementById("student-list-body");
+          tbody.innerHTML = "";
+          let students = db
+            .getStudents()
+            .filter((s) => s.trip_id === router.currentTripId);
+
+          if (filter) {
+            const lower = filter.toLowerCase();
+            students = students.filter(
+              (s) =>
+                s.name.toLowerCase().includes(lower) ||
+                s.student_id.includes(lower),
+            );
+          }
+
+          students.sort(
+            (a, b) => parseInt(a.student_id) - parseInt(b.student_id),
+          );
+
+          students.forEach((s) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                        <td><strong>${s.student_id}</strong></td>
+                        <td>${s.name}</td>
+                        <td>Grade ${s.grade} - Sec ${s.section}</td>
+                        <td><span class="status-badge ${s.status === "Checked-in" ? "status-checked-in" : "status-pending"}">${s.status}</span></td>
+                        <td>
+                            <i class="fas fa-file-pdf action-icon" onclick="app.showTicketModal('${s.id}')" title="Download PDF"></i>
+                            <i class="fas fa-trash action-icon" onclick="app.deleteStudent('${s.id}')" title="Delete"></i>
+                        </td>
+                    `;
+            tbody.appendChild(tr);
+          });
+        },
+
+        addStudent: (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          try {
+            db.addStudent({
+              trip_id: router.currentTripId,
+              name: formData.get("name"),
+              grade: formData.get("grade"),
+              section: formData.get("section"),
+              student_id: formData.get("student_id"),
+            });
+            ui.closeModal("modal-add-student");
+            e.target.reset();
+            app.renderStudents();
+            toast("Student added", "success");
+          } catch (err) {
+            toast(err.message, "error");
+          }
+        },
+
+        deleteStudent: (id) => {
+          if (confirm("Remove student?")) {
+            const students = db.getStudents().filter((s) => s.id !== id);
+            db.saveStudents(students);
+            app.renderStudents();
+          }
+        },
+
+        processBulkImport: () => {
+          const text = document.getElementById("bulk-import-text").value;
+          if (!text.trim()) return;
+
+          const lines = text.split("\n");
+          let count = 0;
+          let error = false;
+
+          lines.forEach((line) => {
+            const parts = line.split(",");
+            if (parts.length >= 4) {
+              try {
+                db.addStudent({
+                  trip_id: router.currentTripId,
+                  name: parts[0].trim(),
+                  grade: parts[1].trim(),
+                  section: parts[2].trim(),
+                  student_id: parts[3].trim(),
+                });
+                count++;
+              } catch (e) {
+                error = true;
+              }
+            }
+          });
+
+          ui.closeModal("modal-bulk-import");
+          app.renderStudents();
+          if (error)
+            toast(
+              "Imported with some errors (duplicates or format)",
+              "warning",
+            );
+          else toast(`${count} students imported`, "success");
+        },
+
+        generateQRData: (student) => {
+          const payload = {
+            sid: student.student_id,
+            tid: router.currentTripId,
+            ts: Date.now(),
+          };
+          return JSON.stringify(payload);
+        },
+
+        showTicketModal: (studentId) => {
+          const student = db.getStudents().find((s) => s.id === studentId);
+          const trip = db.getTrips().find((t) => t.id === router.currentTripId);
+          if (!student || !trip) return;
+
+          app.currentStudentForPDF = student;
+
+          document.getElementById("ticket-trip-name").innerText = trip.name;
+          document.getElementById("ticket-dest-date").innerText =
+            `${trip.destination} • ${trip.date}`;
+          document.getElementById("ticket-student-name").innerText =
+            student.name;
+          document.getElementById("ticket-student-info").innerText =
+            `ID: ${student.student_id} • Grade ${student.grade} - Sec ${student.section}`;
+
+          const qrContainer = document.getElementById("ticket-qr");
+          qrContainer.innerHTML = "";
+          new QRCode(qrContainer, {
+            text: app.generateQRData(student),
+            width: 128,
+            height: 128,
+          });
+
+          ui.openModal("modal-print-ticket");
+        },
+
+        // --- PDF GENERATION LOGIC ---
+
+        downloadSingleTicketPDF: async () => {
+          if (!app.currentStudentForPDF) return;
+          const trip = db.getTrips().find((t) => t.id === router.currentTripId);
+          await app.generatePDF(app.currentStudentForPDF, trip);
+        },
+
+        downloadAllTicketsPDF: async () => {
+          const trip = db.getTrips().find((t) => t.id === router.currentTripId);
+          const students = db
+            .getStudents()
+            .filter((s) => s.trip_id === router.currentTripId);
+
+          if (students.length === 0) {
+            toast("No students to download", "error");
+            return;
+          }
+
+          toast(`Generating PDF for ${students.length} students...`, "info");
+
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          let firstPage = true;
+
+          for (const student of students) {
+            if (!firstPage) doc.addPage();
+            firstPage = false;
+            await app.drawTicketOnDoc(doc, student, trip);
+          }
+
+          doc.save(`${trip.name.replace(/\s+/g, "_")}_All_Tickets.pdf`);
+        },
+
+        generatePDF: async (student, trip) => {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          await app.drawTicketOnDoc(doc, student, trip);
+          doc.save(`${student.name.replace(/\s+/g, "_")}_Ticket.pdf`);
+        },
+
+        drawTicketOnDoc: (doc, student, trip) => {
+          return new Promise((resolve) => {
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 20;
+
+            doc.setFillColor(255, 255, 255);
+            doc.rect(
+              margin,
+              margin,
+              pageWidth - margin * 2,
+              pageHeight - margin * 2,
+              "F",
+            );
+
+            doc.setFillColor(37, 99, 235);
+            doc.rect(margin, margin, pageWidth - margin * 2, 25, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("TripChecks", margin + 10, margin + 17);
+
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text(trip.name, pageWidth / 2, margin + 50, {
+              align: "center",
+            });
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(71, 85, 105);
+            doc.text(
+              `${trip.destination} | ${trip.date}`,
+              pageWidth / 2,
+              margin + 60,
+              { align: "center" },
+            );
+
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(1);
+            doc.line(
+              margin + 10,
+              margin + 75,
+              pageWidth - margin - 10,
+              margin + 75,
+            );
+
+            doc.setFontSize(14);
+            doc.setTextColor(30, 41, 59);
+            doc.text("Student Name", margin + 20, margin + 95);
+            doc.setFontSize(20);
+            doc.setFont("helvetica", "bold");
+            doc.text(student.name, margin + 20, margin + 105);
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "normal");
+            doc.text(
+              `ID Number: ${student.student_id}`,
+              margin + 20,
+              margin + 120,
+            );
+            doc.text(
+              `Grade: ${student.grade} - Section: ${student.section}`,
+              margin + 20,
+              margin + 128,
+            );
+            doc.text(`Status: ${student.status}`, margin + 20, margin + 136);
+
+            // 7. GENERATE AND ADD QR CODE TO PDF
+            const tempDiv = document.createElement("div");
+            document.body.appendChild(tempDiv);
+
+            new QRCode(tempDiv, {
+              text: app.generateQRData(student),
+              width: 200,
+              height: 200,
+            });
+
+            setTimeout(() => {
+              const canvas = tempDiv.querySelector("canvas");
+              if (canvas) {
+                const imgData = canvas.toDataURL("image/png");
+
+                const qrSize = 70;
+                const qrX = (pageWidth - qrSize) / 2;
+                const qrY = margin + 160;
+
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.rect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4);
+
+                doc.addImage(imgData, "PNG", qrX, qrY, qrSize, qrSize);
+
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text(
+                  "SCAN THIS QR CODE AT ENTRANCE",
+                  pageWidth / 2,
+                  qrY + qrSize + 10,
+                  { align: "center" },
+                );
+              }
+
+              document.body.removeChild(tempDiv);
+              resolve();
+            }, 100);
+          });
+        },
+      };
+
+      // --- Scanner Logic ---
+      const scannerApp = {
+        html5QrcodeScanner: null,
+        isScanning: false,
+
+        start: () => {
+          if (scannerApp.isScanning) return;
+          if (typeof Html5Qrcode === "undefined") {
+            document.getElementById("reader").innerHTML =
+              '<p style="color:white; padding:20px;">Camera library not loaded. Check internet connection.</p>';
+            return;
+          }
+
+          scannerApp.isScanning = true;
+          document.getElementById("scan-result").style.display = "none";
+
+          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+          scannerApp.html5QrcodeScanner = new Html5Qrcode("reader");
+
+          scannerApp.html5QrcodeScanner
+            .start(
+              { facingMode: "environment" },
+              config,
+              scannerApp.onScanSuccess,
+              scannerApp.onScanFailure,
+            )
+            .catch((err) => {
+              console.error(err);
+              document.getElementById("reader").innerHTML =
+                `<p style="color:white; padding:20px;">Camera Error: ${err}. Ensure using HTTPS.</p>`;
+            });
+        },
+
+        stop: async () => {
+          if (scannerApp.html5QrcodeScanner && scannerApp.isScanning) {
+            await scannerApp.html5QrcodeScanner.stop();
+            scannerApp.isScanning = false;
+          }
+        },
+
+        onScanSuccess: (decodedText, decodedResult) => {
+          try {
+            const data = JSON.parse(decodedText);
+            if (!data.sid || !data.tid) throw new Error("Invalid Format");
+            scannerApp.validateStudent(data.tid, data.sid);
+          } catch (e) {
+            scannerApp.showResult("INVALID", "Unknown Data", "-", "error");
+            playBeep("error");
+          }
+
+          scannerApp.html5QrcodeScanner.pause();
+          setTimeout(() => scannerApp.html5QrcodeScanner.resume(), 2500);
+        },
+
+        onScanFailure: (error) => {},
+
+        manualCheck: () => {
+          const id = document.getElementById("manual-id-input").value;
+          if (!id) return;
+          const students = db.getStudents();
+          const student = students.find((s) => s.student_id == id);
+
+          if (student) {
+            scannerApp.validateStudent(student.trip_id, student.student_id);
+          } else {
+            scannerApp.showResult("INVALID", "ID Not Found", id, "error");
+            playBeep("error");
+          }
+        },
+
+        validateStudent: (tripId, studentId) => {
+          const student = db.findStudentByScanId(tripId, studentId);
+          const trip = db.getTrips().find((t) => t.id === tripId);
+
+          if (!student) {
+            scannerApp.showResult(
+              "INVALID",
+              "Student/Trip Mismatch",
+              `ID: ${studentId}`,
+              "error",
+            );
+            playBeep("error");
+            return;
+          }
+
+          if (student.status === "Checked-in") {
+            scannerApp.showResult(
+              "ALREADY USED",
+              student.name,
+              `Grade ${student.grade} • Sec ${student.section}`,
+              "warning",
+            );
+            playBeep("warning");
+          } else {
+            db.updateStudentStatus(student.id, "Checked-in");
+            scannerApp.showResult(
+              "VALID",
+              student.name,
+              `Grade ${student.grade} • Sec ${student.section}`,
+              "success",
+            );
+            playBeep("success");
+          }
+        },
+
+        showResult: (status, name, details, type) => {
+          const el = document.getElementById("scan-result");
+          el.style.display = "block";
+          el.classList.remove(
+            "scan-status-valid",
+            "scan-status-warning",
+            "scan-status-invalid",
+          );
+          if (type === "success") el.classList.add("scan-status-valid");
+          if (type === "warning") el.classList.add("scan-status-warning");
+          if (type === "error") el.classList.add("scan-status-invalid");
+
+          document.getElementById("scan-status-text").innerText = status;
+          document.getElementById("scan-status-text").style.color =
+            type === "success"
+              ? "var(--success)"
+              : type === "warning"
+                ? "var(--warning)"
+                : "var(--danger)";
+          document.getElementById("scan-student-name").innerText = name;
+          document.getElementById("scan-student-details").innerText = details;
+          document.getElementById("scan-timestamp").innerText =
+            new Date().toLocaleTimeString();
+        },
+      };
+
+      // --- UI Helpers ---
+      const ui = {
+        openModal: (id) => document.getElementById(id).classList.add("open"),
+        closeModal: (id) =>
+          document.getElementById(id).classList.remove("open"),
+      };
+
+      document.querySelectorAll(".modal-backdrop").forEach((b) => {
+        b.addEventListener("click", (e) => {
+          if (e.target === b) b.classList.remove("open");
+        });
+      });
+
+      window.onload = app.init;
+    </script>
+  </body>
+</html>
